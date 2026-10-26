@@ -1,0 +1,21 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: s03dicas-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: s03dicas
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - s03dicas-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d s03dicas"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  s03dicas-data:
