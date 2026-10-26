@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Pgvector.EntityFrameworkCore;
 using PokemonRecommender.Data;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +13,14 @@ builder.Services.AddDbContext<AppDbContext>(o =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment()) app.MapOpenApi();
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference();
+
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+}
 
 app.UseHttpsRedirection();
 app.MapControllers();
