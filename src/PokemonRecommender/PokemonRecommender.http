@@ -1,6 +1,11 @@
-@PokemonRecommender_HostAddress = http://localhost:5242
+@host = http://localhost:5242
 
-GET {{PokemonRecommender_HostAddress}}/weatherforecast/
-Accept: application/json
+### Simula o broker avisando que um jogador foi criado
+POST {{host}}/api/eventos/novo-jogador
+Content-Type: application/json
 
-###
+{
+  "playerId": "3f2b8c1e-0000-4000-8000-000000000001",
+  "nome": "Ash Ketchum",
+  "nickname": "ash123"
+}
