@@ -5,9 +5,13 @@ on:
     branches: [main]
   pull_request:
 
+# Cancela execuções antigas da mesma branch/PR quando chega um push novo
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 env:
   PROJECT: src/PokemonRecommender/PokemonRecommender.csproj
@@ -36,6 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
 
+    # Mesmo banco do docker-compose.yml (Postgres 17 + pgvector)
     services:
       db:
         image: pgvector/pgvector:pg17
@@ -52,7 +57,7 @@ jobs:
           --health-retries 10
 
     env:
-      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_ENVIRONMENT: Development # em Development a API aplica as migrations ao subir
       ConnectionStrings__Default: Host=localhost;Port=5432;Database=s03dicas;Username=postgres;Password=postgres
 
     steps:
@@ -73,8 +78,17 @@ jobs:
 
       - name: Rodar coleção Postman (Newman)
         run: |
-          npx --yes newman run tests/postman/recomendacao-de-cartas.postman_collection.json \
-            --env-var base_url=http://localhost:5242
+          npm install -g newman newman-reporter-htmlextra
+          newman run tests/postman/recomendacao-de-cartas.postman_collection.json \
+            --env-var base_url=http://localhost:5242 \
+            -r cli,htmlextra \
+            --reporter-htmlextra-export site/index.html
+
+      - name: Preparar relatório para o Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
 
       - name: Anexar log da API se falhar
         if: failure()
@@ -82,3 +96,19 @@ jobs:
         with:
           name: api-log
           path: api.log
+
+  deploy-report:
+    name: Publicar relatório no Pages
+    runs-on: ubuntu-latest
+    needs: integration
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v4
