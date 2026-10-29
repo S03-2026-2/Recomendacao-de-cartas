@@ -1,0 +1,189 @@
+{
+  "info": {
+    "name": "Recomendacao de cartas",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5242" },
+    { "key": "player_id", "value": "" },
+    { "key": "other_id", "value": "" },
+    { "key": "nickname", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "POST eventos/novo-jogador",
+      "item": [
+        {
+          "name": "01 Criar jogador (201)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('player_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "pm.collectionVariables.set('other_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "pm.collectionVariables.set('nickname', 'jogador_' + pm.variables.replaceIn('{{$guid}}').slice(0, 8));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('retorna 201 ao criar o jogador', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('devolve o playerId enviado', function () {",
+                  "  pm.expect(pm.response.json().playerId).to.eql(pm.collectionVariables.get('player_id'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playerId\": \"{{player_id}}\",\n  \"nome\": \"Jogador de Teste\",\n  \"nickname\": \"{{nickname}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/eventos/novo-jogador",
+              "host": ["{{base_url}}"],
+              "path": ["api", "eventos", "novo-jogador"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "02 Repetir o mesmo evento (200)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('retorna 200 quando o evento se repete', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playerId\": \"{{player_id}}\",\n  \"nome\": \"Jogador de Teste\",\n  \"nickname\": \"{{nickname}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/eventos/novo-jogador",
+              "host": ["{{base_url}}"],
+              "path": ["api", "eventos", "novo-jogador"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "03 Nickname repetido (409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('retorna 409 quando o nickname ja esta em uso', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playerId\": \"{{other_id}}\",\n  \"nome\": \"Outro Jogador\",\n  \"nickname\": \"{{nickname}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/eventos/novo-jogador",
+              "host": ["{{base_url}}"],
+              "path": ["api", "eventos", "novo-jogador"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "04 Sem nickname (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('retorna 400 quando falta o nickname', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playerId\": \"{{other_id}}\",\n  \"nome\": \"Sem Nickname\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/eventos/novo-jogador",
+              "host": ["{{base_url}}"],
+              "path": ["api", "eventos", "novo-jogador"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "05 Id vazio (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('retorna 400 quando o playerId e vazio', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"playerId\": \"00000000-0000-0000-0000-000000000000\",\n  \"nome\": \"Id Vazio\",\n  \"nickname\": \"id_vazio\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/eventos/novo-jogador",
+              "host": ["{{base_url}}"],
+              "path": ["api", "eventos", "novo-jogador"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
