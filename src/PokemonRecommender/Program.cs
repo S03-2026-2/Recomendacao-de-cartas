@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Pgvector.EntityFrameworkCore;
 using PokemonRecommender.Data;
+using PokemonRecommender.Integrations;
 using PokemonRecommender.Repositories;
 using PokemonRecommender.Services;
 using Scalar.AspNetCore;
@@ -15,8 +16,20 @@ builder.Services.AddDbContext<AppDbContext>(o =>
 
 builder.Services.Configure<RateLimitOptions>(builder.Configuration.GetSection("RateLimit"));
 
+builder.Services.AddHttpClient<IPokeApiClient, PokeApiClient>(c =>
+{
+    c.BaseAddress = new Uri("https://pokeapi.co/api/v2/");
+    c.Timeout = TimeSpan.FromSeconds(15);
+});
+
+// Novo jogador
 builder.Services.AddScoped<IPlayerRepository, PlayerRepository>();
 builder.Services.AddScoped<IPlayerService, PlayerService>();
+
+// Importação da PokeAPI
+builder.Services.AddScoped<IEfetividadeRepository, EfetividadeRepository>();
+builder.Services.AddScoped<IRegraRepository, PgVectorRegraRepository>();
+builder.Services.AddScoped<IImportacaoPokeApiService, ImportacaoPokeApiService>();
 
 var app = builder.Build();
 
@@ -27,6 +40,18 @@ if (app.Environment.IsDevelopment())
 
     using var scope = app.Services.CreateScope();
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+
+    try
+    {
+        await scope.ServiceProvider
+            .GetRequiredService<IImportacaoPokeApiService>()
+            .ImportarTiposAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogWarning(ex,
+            "Não foi possível importar os tipos da PokeAPI. A API segue sem esses dados; reinicie para tentar de novo.");
+    }
 }
 
 app.UseHttpsRedirection();
