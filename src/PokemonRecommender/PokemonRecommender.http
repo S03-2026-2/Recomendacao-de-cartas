@@ -9,3 +9,49 @@ Content-Type: application/json
   "nome": "Ash Ketchum",
   "nickname": "ash123"
 }
+
+### Cria o jogador que vai pedir dica
+POST {{host}}/api/eventos/novo-jogador
+Content-Type: application/json
+
+{
+  "playerId": "3f2b8c1e-0000-4000-8000-0000000000aa",
+  "nome": "Jogador da Dica",
+  "nickname": "dica_teste"
+}
+
+### Cenário 1: Pikachu (electric) contra Squirtle (water)
+POST {{host}}/api/dica
+Authorization: Bearer 3f2b8c1e-0000-4000-8000-0000000000aa
+Content-Type: application/json
+
+{
+  "jogador": {
+    "campo": [{ "id": "11111111-0000-4000-8000-000000000001", "nome": "Pikachu", "tipos": ["electric"], "movimentos": ["thunder-shock"] }],
+    "mao":   [{ "id": "11111111-0000-4000-8000-000000000002", "nome": "Charmander", "tipos": ["fire"], "movimentos": ["ember"] }],
+    "hp": 80
+  },
+  "oponente": {
+    "campo": [{ "id": "11111111-0000-4000-8000-000000000003", "nome": "Squirtle", "tipos": ["water"], "movimentos": ["water-gun"] }],
+    "mao": [],
+    "hp": 60
+  }
+}
+
+### Cenário 2: Squirtle (water) contra Onix (rock, ground)
+POST {{host}}/api/dica
+Authorization: Bearer 3f2b8c1e-0000-4000-8000-0000000000aa
+Content-Type: application/json
+
+{
+  "jogador": {
+    "campo": [{ "id": "11111111-0000-4000-8000-000000000003", "nome": "Squirtle", "tipos": ["water"], "movimentos": ["water-gun"] }],
+    "mao":   [{ "id": "11111111-0000-4000-8000-000000000001", "nome": "Pikachu", "tipos": ["electric"], "movimentos": ["thunder-shock"] }],
+    "hp": 70
+  },
+  "oponente": {
+    "campo": [{ "id": "11111111-0000-4000-8000-000000000004", "nome": "Onix", "tipos": ["rock", "ground"], "movimentos": ["tackle"] }],
+    "mao": [],
+    "hp": 50
+  }
+}

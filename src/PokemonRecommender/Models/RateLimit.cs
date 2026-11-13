@@ -15,4 +15,12 @@ public class RateLimit
         UsoAtual = 0;
         InicioJanela = DateTime.UtcNow;
     }
+
+    public void IncrementarUso() => UsoAtual++;
+
+    public void ReiniciarJanela(DateTime inicio)
+    {
+        InicioJanela = inicio;
+        UsoAtual = 0;
+    }
 }

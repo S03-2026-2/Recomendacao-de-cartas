@@ -5,5 +5,6 @@ namespace PokemonRecommender.Repositories;
 public interface IRegraRepository
 {
     Task<bool> ExistemDaFonteAsync(string prefixoFonte, CancellationToken ct = default);
+    Task<IReadOnlyList<Regra>> BuscarPorFontesAsync(IReadOnlyCollection<string> fontes, CancellationToken ct = default);
     Task AdicionarAsync(IEnumerable<Regra> regras, CancellationToken ct = default);
 }
