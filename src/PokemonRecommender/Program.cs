@@ -31,6 +31,15 @@ builder.Services.AddScoped<IEfetividadeRepository, EfetividadeRepository>();
 builder.Services.AddScoped<IRegraRepository, PgVectorRegraRepository>();
 builder.Services.AddScoped<IImportacaoPokeApiService, ImportacaoPokeApiService>();
 
+// Pedir dica
+builder.Services.AddScoped<IRateLimitRepository, RateLimitRepository>();
+builder.Services.AddScoped<IRateLimitService, RateLimitService>();
+builder.Services.AddScoped<IAutenticacaoService, AutenticacaoService>();
+builder.Services.AddScoped<IRegraService, RegraService>();
+builder.Services.AddScoped<EstrategiaJogada, EstrategiaPorScore>();
+builder.Services.AddScoped<IDicaService, DicaService>();
+builder.Services.AddScoped<IRecomendacaoService, RecomendacaoService>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
