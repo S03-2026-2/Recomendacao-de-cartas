@@ -9,6 +9,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<RateLimit> RateLimits => Set<RateLimit>();
     public DbSet<Carta> Cartas => Set<Carta>();
     public DbSet<Regra> Regras => Set<Regra>();
+    public DbSet<EfetividadeTipo> Efetividades => Set<EfetividadeTipo>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -53,10 +54,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.Property(x => x.Id).ValueGeneratedNever();
             e.Property(x => x.Texto).IsRequired();
             e.Property(x => x.Fonte).HasMaxLength(100).IsRequired();
+            e.HasIndex(x => x.Fonte);
             e.Property(x => x.Embedding).HasColumnType("vector(1536)");
             e.HasIndex(x => x.Embedding)
              .HasMethod("hnsw")
              .HasOperators("vector_cosine_ops");
+        });
+
+        b.Entity<EfetividadeTipo>(e =>
+        {
+            e.HasKey(x => new { x.Atacante, x.Defensor });
+            e.Property(x => x.Atacante).HasMaxLength(50);
+            e.Property(x => x.Defensor).HasMaxLength(50);
         });
     }
 }

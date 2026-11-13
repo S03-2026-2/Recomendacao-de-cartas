@@ -48,6 +48,24 @@ namespace PokemonRecommender.Migrations
                     b.ToTable("Cartas");
                 });
 
+            modelBuilder.Entity("PokemonRecommender.Models.EfetividadeTipo", b =>
+                {
+                    b.Property<string>("Atacante")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Defensor")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<double>("Multiplicador")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("Atacante", "Defensor");
+
+                    b.ToTable("Efetividades");
+                });
+
             modelBuilder.Entity("PokemonRecommender.Models.RateLimit", b =>
                 {
                     b.Property<Guid>("UsuarioId")
@@ -70,7 +88,6 @@ namespace PokemonRecommender.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<Vector>("Embedding")
-                        .IsRequired()
                         .HasColumnType("vector(1536)");
 
                     b.Property<string>("Fonte")
@@ -88,6 +105,8 @@ namespace PokemonRecommender.Migrations
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Embedding"), "hnsw");
                     NpgsqlIndexBuilderExtensions.HasOperators(b.HasIndex("Embedding"), new[] { "vector_cosine_ops" });
+
+                    b.HasIndex("Fonte");
 
                     b.ToTable("Regras");
                 });
