@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Carta> Cartas => Set<Carta>();
     public DbSet<Regra> Regras => Set<Regra>();
     public DbSet<EfetividadeTipo> Efetividades => Set<EfetividadeTipo>();
+    public DbSet<SolicitacaoRateLimit> Solicitacoes => Set<SolicitacaoRateLimit>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -66,6 +67,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasKey(x => new { x.Atacante, x.Defensor });
             e.Property(x => x.Atacante).HasMaxLength(50);
             e.Property(x => x.Defensor).HasMaxLength(50);
+        });
+
+        b.Entity<SolicitacaoRateLimit>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedNever();
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.HasIndex(x => x.JogadorId);
+            e.HasOne<Jogador>()
+             .WithMany()
+             .HasForeignKey(x => x.JogadorId)
+             .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

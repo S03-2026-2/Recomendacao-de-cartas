@@ -111,6 +111,32 @@ namespace PokemonRecommender.Migrations
                     b.ToTable("Regras");
                 });
 
+            modelBuilder.Entity("PokemonRecommender.Models.SolicitacaoRateLimit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("DataCriacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("JogadorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("LimiteSolicitado")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JogadorId");
+
+                    b.ToTable("Solicitacoes");
+                });
+
             modelBuilder.Entity("PokemonRecommender.Models.Usuario", b =>
                 {
                     b.Property<Guid>("Id")
@@ -188,6 +214,15 @@ namespace PokemonRecommender.Migrations
                         });
 
                     b.Navigation("Policy")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PokemonRecommender.Models.SolicitacaoRateLimit", b =>
+                {
+                    b.HasOne("PokemonRecommender.Models.Jogador", null)
+                        .WithMany()
+                        .HasForeignKey("JogadorId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
