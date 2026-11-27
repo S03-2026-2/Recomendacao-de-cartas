@@ -19,7 +19,9 @@ public class PlayerRepository(AppDbContext db) : IPlayerRepository
 
     public async Task SalvarAsync(Jogador jogador, CancellationToken ct = default)
     {
-        db.Usuarios.Add(jogador);
+        if (db.Entry(jogador).State == EntityState.Detached)
+            db.Usuarios.Add(jogador);
+
         await db.SaveChangesAsync(ct);
     }
 }
