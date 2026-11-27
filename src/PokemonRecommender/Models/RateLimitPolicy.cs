@@ -12,4 +12,6 @@ public class RateLimitPolicy
         LimiteAtual = limiteAtual;
         JanelaTempo = janelaTempo;
     }
+
+    public void DefinirLimite(int limite) => LimiteAtual = limite;
 }

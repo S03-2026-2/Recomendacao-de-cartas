@@ -1,6 +1,34 @@
-@host = http://localhost:5242
+# =====================================================================
+#  Testes manuais da API (VS Code: extensão REST Client; Rider: HTTP Client)
+#
+#  COMO USAR
+#   1. Banco limpo:   docker compose down -v && docker compose up -d --wait
+#   2. API rodando:   dotnet run --project src/PokemonRecommender
+#      (em desenvolvimento ela importa os tipos da PokeAPI ao subir;
+#       sem isso, os pedidos de dica respondem 503)
+#   3. Rode os pedidos NA ORDEM, de cima para baixo.
+#
+#  ATENÇÃO
+#   - Rodar o arquivo duas vezes sem limpar o banco muda os resultados:
+#     o cadastro responde 200 em vez de 201, e o jogador bloqueado
+#     recebe 403 nas dicas.
+#   - Os pedidos admin precisam que o admin (@admin) exista no banco.
+#     Se a API não criar esse admin sozinha (seed), crie uma vez:
+#       docker exec -it s03dicas-db psql -U postgres -d s03dicas -c \
+#         "INSERT INTO \"Usuarios\" (\"Id\",\"Nome\",\"TipoUsuario\") VALUES ('3f2b8c1e-0000-4000-8000-0000000000ad','Admin','admin');"
+# =====================================================================
 
-### Simula o broker avisando que um jogador foi criado
+@host = http://localhost:5242
+@admin = 3f2b8c1e-0000-4000-8000-0000000000ad
+@jogador = 3f2b8c1e-0000-4000-8000-0000000000aa
+@jogadorLimite = 3f2b8c1e-0000-4000-8000-0000000000bb
+
+
+# =====================================================================
+#  1. CADASTRO DE JOGADORES (evento do broker / Sistema de Jogadores)
+# =====================================================================
+
+### 1.1 Simula o broker avisando que um jogador foi criado (espera 201)
 POST {{host}}/api/eventos/novo-jogador
 Content-Type: application/json
 
@@ -10,19 +38,63 @@ Content-Type: application/json
   "nickname": "ash123"
 }
 
-### Cria o jogador que vai pedir dica
+### 1.2 Repete o mesmo evento (espera 200, não duplica)
 POST {{host}}/api/eventos/novo-jogador
 Content-Type: application/json
 
 {
-  "playerId": "3f2b8c1e-0000-4000-8000-0000000000aa",
+  "playerId": "3f2b8c1e-0000-4000-8000-000000000001",
+  "nome": "Ash Ketchum",
+  "nickname": "ash123"
+}
+
+### 1.3 Outro jogador com o mesmo nickname (espera 409)
+POST {{host}}/api/eventos/novo-jogador
+Content-Type: application/json
+
+{
+  "playerId": "3f2b8c1e-0000-4000-8000-000000000002",
+  "nome": "Outro Jogador",
+  "nickname": "ash123"
+}
+
+### 1.4 Sem nickname (espera 400)
+POST {{host}}/api/eventos/novo-jogador
+Content-Type: application/json
+
+{
+  "playerId": "3f2b8c1e-0000-4000-8000-000000000003",
+  "nome": "Sem Nickname"
+}
+
+### 1.5 Cria o jogador que vai pedir dica (espera 201)
+POST {{host}}/api/eventos/novo-jogador
+Content-Type: application/json
+
+{
+  "playerId": "{{jogador}}",
   "nome": "Jogador da Dica",
   "nickname": "dica_teste"
 }
 
-### Cenário 1: Pikachu (electric) contra Squirtle (water)
+
+# =====================================================================
+#  2. PEDIR DICA  (POST /api/dica)
+# =====================================================================
+
+### 2.1 Sem token (espera 401)
 POST {{host}}/api/dica
-Authorization: Bearer 3f2b8c1e-0000-4000-8000-0000000000aa
+Content-Type: application/json
+
+{
+  "jogador":  { "campo": [], "mao": [], "hp": 80 },
+  "oponente": { "campo": [], "mao": [], "hp": 60 }
+}
+
+### 2.2 Cenário 1: Pikachu (electric) contra Squirtle (water)
+# Espera 200. Melhor jogada: "Atacar com Pikachu" (efetividade 2x)
+POST {{host}}/api/dica
+Authorization: Bearer {{jogador}}
 Content-Type: application/json
 
 {
@@ -38,9 +110,10 @@ Content-Type: application/json
   }
 }
 
-### Cenário 2: Squirtle (water) contra Onix (rock, ground)
+### 2.3 Cenário 2: Squirtle (water) contra Onix (rock, ground)
+# Espera 200. Melhor jogada: "Atacar com Squirtle" (efetividade 4x)
 POST {{host}}/api/dica
-Authorization: Bearer 3f2b8c1e-0000-4000-8000-0000000000aa
+Authorization: Bearer {{jogador}}
 Content-Type: application/json
 
 {
@@ -53,5 +126,118 @@ Content-Type: application/json
     "campo": [{ "id": "11111111-0000-4000-8000-000000000004", "nome": "Onix", "tipos": ["rock", "ground"], "movimentos": ["tackle"] }],
     "mao": [],
     "hp": 50
+  }
+}
+
+### 2.4 Oponente sem carta em campo (espera 422)
+POST {{host}}/api/dica
+Authorization: Bearer {{jogador}}
+Content-Type: application/json
+
+{
+  "jogador": {
+    "campo": [{ "id": "11111111-0000-4000-8000-000000000001", "nome": "Pikachu", "tipos": ["electric"], "movimentos": ["thunder-shock"] }],
+    "mao": [],
+    "hp": 80
+  },
+  "oponente": { "campo": [], "mao": [], "hp": 60 }
+}
+
+
+# =====================================================================
+#  3. ADMIN
+# =====================================================================
+
+### 3.1 Sem token de admin (espera 401)
+GET {{host}}/api/admin/solicitacoes
+
+### 3.2 Cria uma solicitação de aumento de limite (espera 201, status Pendente)
+# @name criarSolicitacao
+POST {{host}}/api/admin/solicitacoes
+Authorization: Bearer {{admin}}
+Content-Type: application/json
+
+{ "jogadorId": "{{jogador}}", "limiteSolicitado": 20 }
+
+### 3.3 Lista as pendentes (espera 200)
+GET {{host}}/api/admin/solicitacoes?status=Pendente
+Authorization: Bearer {{admin}}
+
+### 3.4 Aprova a solicitação (espera 200, status Aprovada)
+# Só funciona depois de enviar o 3.2
+POST {{host}}/api/admin/solicitacoes/{{criarSolicitacao.response.body.$.id}}/aprovar
+Authorization: Bearer {{admin}}
+
+### 3.5 Aprova de novo (espera 409)
+POST {{host}}/api/admin/solicitacoes/{{criarSolicitacao.response.body.$.id}}/aprovar
+Authorization: Bearer {{admin}}
+
+### 3.6 Cadastra uma carta (espera 201)
+# @name criarCarta
+POST {{host}}/api/admin/cartas
+Authorization: Bearer {{admin}}
+Content-Type: application/json
+
+{ "nome": "Pikachu", "tipos": ["electric"], "movimentos": ["thunder-shock"] }
+
+### 3.7 Consulta a carta cadastrada (espera 200)
+# Só funciona depois de enviar o 3.6
+GET {{host}}/api/admin/cartas/{{criarCarta.response.body.$.id}}
+Authorization: Bearer {{admin}}
+
+### 3.8 Bloqueia a dica do jogador (espera 204)
+POST {{host}}/api/admin/jogadores/{{jogador}}/bloquear-dica
+Authorization: Bearer {{admin}}
+
+### 3.9 O jogador bloqueado pede dica (espera 403)
+POST {{host}}/api/dica
+Authorization: Bearer {{jogador}}
+Content-Type: application/json
+
+{
+  "jogador": {
+    "campo": [{ "id": "11111111-0000-4000-8000-000000000001", "nome": "Pikachu", "tipos": ["electric"], "movimentos": ["thunder-shock"] }],
+    "mao": [],
+    "hp": 80
+  },
+  "oponente": {
+    "campo": [{ "id": "11111111-0000-4000-8000-000000000003", "nome": "Squirtle", "tipos": ["water"], "movimentos": ["water-gun"] }],
+    "mao": [],
+    "hp": 60
+  }
+}
+
+
+# =====================================================================
+#  4. LIMITE DE DICAS (429) - opcional
+#  O limite padrão é 5 dicas por dia. Usa um jogador separado para não
+#  mexer no jogador dos testes acima.
+# =====================================================================
+
+### 4.1 Cria o jogador do teste de limite (espera 201)
+POST {{host}}/api/eventos/novo-jogador
+Content-Type: application/json
+
+{
+  "playerId": "{{jogadorLimite}}",
+  "nome": "Jogador do Limite",
+  "nickname": "limite_teste"
+}
+
+### 4.2 Pede dica (ENVIE 6 VEZES: as 5 primeiras dão 200 e a 6ª dá 429)
+POST {{host}}/api/dica
+Authorization: Bearer {{jogadorLimite}}
+Content-Type: application/json
+
+{
+  "jogador": {
+    "campo": [{ "id": "11111111-0000-4000-8000-000000000001", "nome": "Pikachu", "tipos": ["electric"], "movimentos": ["thunder-shock"] }],
+    "mao": [],
+    "hp": 80
+  },
+  "oponente": {
+    "campo": [{ "id": "11111111-0000-4000-8000-000000000003", "nome": "Squirtle", "tipos": ["water"], "movimentos": ["water-gun"] }],
+    "mao": [],
+    "hp": 60
   }
 }
