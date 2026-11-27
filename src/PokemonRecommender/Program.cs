@@ -40,6 +40,14 @@ builder.Services.AddScoped<EstrategiaJogada, EstrategiaPorScore>();
 builder.Services.AddScoped<IDicaService, DicaService>();
 builder.Services.AddScoped<IRecomendacaoService, RecomendacaoService>();
 
+// Admin
+builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+builder.Services.AddScoped<ISolicitacaoRepository, SolicitacaoRepository>();
+builder.Services.AddScoped<ICartaRepository, CartaRepository>();
+builder.Services.AddScoped<ISolicitacaoRateLimitService, SolicitacaoRateLimitService>();
+builder.Services.AddScoped<IBloqueioDicaService, BloqueioDicaService>();
+builder.Services.AddScoped<ICartaService, CartaService>();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -48,7 +56,9 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 
     using var scope = app.Services.CreateScope();
-    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+    await AdminSeeder.GarantirAdminDemoAsync(db);
 
     try
     {
